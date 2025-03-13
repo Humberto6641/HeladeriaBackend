@@ -365,7 +365,7 @@ router.delete("/usuarios/:id", verificarToken, verificarRol(['admin']), async (r
 
 
 ////////////////////Ruta para actualizar los usuarios solo rol y por el adminstrador
-router.patch("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
+rrouter.patch("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
   const { id } = req.params;
   const { rol } = req.body;
 
@@ -374,35 +374,33 @@ router.patch("/usuarios/:id", verificarToken, verificarRol(['admin']), async (re
     return res.status(400).json({ error: "El rol es obligatorio" });
   }
 
+  console.log("ID recibido:", id);
+  console.log("Rol recibido:", rol);
+
   try {
-    // Construir el objeto con el campo que se va a actualizar
     const updateFields = { rol };
 
-    // Actualizar el usuario en la base de datos
     const { data, error } = await supabase
       .from("usuario")
       .update(updateFields)
       .eq("id", id)
       .returning("*");
 
-    // Manejo de errores si la actualización falla
     if (error) {
+      console.error("Error en Supabase:", error.message);
       return res.status(500).json({ error: error.message });
     }
 
-    // Verificar si se encontró el usuario para actualizar
     if (!data || data.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    // Responder con éxito
     res.status(200).json({ message: "Rol del usuario actualizado con éxito", usuario: data[0] });
   } catch (err) {
-    // Manejo de errores en el bloque try-catch
+    console.error("Error al actualizar:", err.message);
     res.status(500).json({ error: 'Error al actualizar el rol del usuario', details: err.message });
   }
 });
-
 
 
 
