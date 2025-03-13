@@ -383,7 +383,8 @@ router.patch("/usuarios/:id", verificarToken, verificarRol(['admin']), async (re
     const { data, error } = await supabase
       .from("usuario")
       .update(updateFields)
-      .eq("id", id);
+      .eq("id", id)
+      .select();
 
     if (error) {s
       console.error("Error en Supabase:", error.message);
