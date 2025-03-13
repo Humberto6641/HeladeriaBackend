@@ -1,13 +1,17 @@
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
+const { registrarUsuario, loginUsuario } = require('./auth');  // Asegúrate de importar las funciones correctamente
+const { verificarToken, verificarRol } = require('./auth');
+const router = express.Router();
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-const router = express.Router();
+// Rutas de autenticación
+router.post("/register", registrarUsuario);
+router.post("/login", loginUsuario);
 
-///////////////////////////////////////////PRODUCTOS
-// Ruta para registrar productos
-router.post("/productos", async (req, res) => {
+// Rutas para productos
+router.post("/productos", verificarToken, verificarRol(['admin', 'vendedor']), async (req, res) => {
   const { nombre, tipo, precio, stock } = req.body;
 
   if (!nombre || !tipo || !precio || !stock) {
@@ -15,8 +19,9 @@ router.post("/productos", async (req, res) => {
   }
 
   const { data, error } = await supabase
-    .from("producto") 
-    .insert([{ nombre, tipo, precio, stock }]);
+    .from("producto")
+    .insert([{ nombre, tipo, precio, stock }])
+    .select();
 
   if (error) {
     return res.status(500).json({ error: error.message });
@@ -25,10 +30,9 @@ router.post("/productos", async (req, res) => {
   res.status(201).json({ message: "Producto creado con éxito", producto: data[0] });
 });
 
-// Ruta para otener todos los productos
-router.get("/productos", async (req, res) => {
-  const { data, error } = await supabase.from("producto").select("*");  // cAMBIAR LUEGO EL * 
-
+// Ruta para obtener todos los productos
+router.get("/productos", verificarToken, verificarRol(['admin', 'vendedor']), async (req, res) => {
+  const { data, error } = await supabase.from("producto").select("id, nombre, tipo, precio, stock");
 
   if (error) {
     return res.status(500).json({ error: error.message });
@@ -36,33 +40,9 @@ router.get("/productos", async (req, res) => {
 
   res.status(200).json(data);
 });
-//ruta insertar producto
-router.post("/productos", async (req, res) => {
-  const { nombre, tipo, precio, stock } = req.body;
-
-  try {
-    const result = await pool.query(
-      `INSERT INTO Producto (nombre, tipo, precio, stock) 
-      VALUES ($1, $2, $3, $4) 
-      RETURNING *`,
-      [nombre, tipo, precio, stock]
-    );
-    const producto = result.rows[0];
-
-    if (producto) {
-      res.status(201).json({ message: "Producto creado con éxito", producto });
-    } else {
-      res.status(500).json({ error: "No se pudo crear el producto" });
-    }
-
-  } catch (error) {
-    console.error("Error al insertar el producto:", error);
-    res.status(500).json({ error: "Error en el servidor" });
-  }
-});
 
 // Ruta para obtener producto por ID
-router.get('/productos/:id', async (req, res) => {
+router.get('/productos/:id', verificarToken, verificarRol(['admin', 'vendedor']), async (req, res) => {
   const productoId = req.params.id;
 
   try {
@@ -82,8 +62,33 @@ router.get('/productos/:id', async (req, res) => {
   }
 });
 
-// Ruta para actualizar productos
-router.put("/productos/:id", async (req, res) => {
+/// Ruta para eliminar un producto
+router.delete("/productos/:id", verificarToken, verificarRol(['admin', 'vendedor']), async (req, res) => {
+  const productoId = req.params.id;
+
+  try {
+    const { data, error } = await supabase
+      .from("producto")
+      .delete()
+      .eq("id", productoId)
+      .returning("*");
+
+    if (error) {
+      return res.status(500).json({ error: 'Error al eliminar el producto', details: error.message });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    res.status(200).json({ message: 'Producto eliminado con éxito', producto: data[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar el producto', details: err.message });
+  }
+});
+
+// Ruta para actualizar un producto (Revisión)
+router.put("/productos/:id", verificarToken, verificarRol(['admin', 'vendedor']), async (req, res) => {
   const { id } = req.params;
   const { nombre, tipo, precio, stock } = req.body;
 
@@ -91,24 +96,31 @@ router.put("/productos/:id", async (req, res) => {
     return res.status(400).json({ error: "Todos los campos son obligatorios" });
   }
 
-  const { data, error } = await supabase
-    .from("producto")
-    .update({ nombre, tipo, precio, stock })
-    .eq("id", id)
-    .returning("*");
+  try {
+    const { data, error } = await supabase
+      .from("producto")
+      .update({ nombre, tipo, precio, stock })
+      .eq("id", id)
+      .returning("*");
 
-  if (error) {
-    return res.status(500).json({ error: error.message });
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    res.status(200).json({ message: "Producto actualizado con éxito", producto: data[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar el producto', details: err.message });
   }
-
-  res.status(200).json({ message: "Producto actualizado con éxito", producto: data[0] });
 });
 
+//////////////////////////////////////////////////ventas
 
-//////////////////////////////////////////////VENTAS
-
-// Ruta para registrar ventas
-router.post("/ventas", async (req, res) => {
+// Rutas para ventas
+router.post("/ventas", verificarToken, verificarRol(['admin', 'vendedor']), async (req, res) => {
   const { id_usuario, productos } = req.body;
 
   if (!id_usuario || !productos || productos.length === 0) {
@@ -119,7 +131,7 @@ router.post("/ventas", async (req, res) => {
     const { id_producto, cantidad } = producto;
 
     const { data: productoData, error: productoError } = await supabase
-      .from("producto") 
+      .from("producto")
       .select("precio, stock")
       .eq("id", id_producto)
       .single();
@@ -133,14 +145,13 @@ router.post("/ventas", async (req, res) => {
 
     const newStock = productoData.stock - cantidad;
     await supabase
-      .from("producto")  
+      .from("producto")
       .update({ stock: newStock })
       .eq("id", id_producto);
   }
 
-  // venta
   const { data: ventaData, error: ventaError } = await supabase
-    .from("venta")  
+    .from("venta")
     .insert([{ id_usuario, fecha: new Date(), total }])
     .select("id")
     .single();
@@ -149,11 +160,10 @@ router.post("/ventas", async (req, res) => {
     return res.status(500).json({ error: ventaError.message });
   }
 
-  
   const detalles = productos.map(async (producto) => {
     const { id_producto, cantidad } = producto;
     const subtotal = (await supabase.from("producto").select("precio").eq("id", id_producto).single()).data.precio * cantidad;
-    
+
     await supabase.from("detalle_venta").insert([{
       id_venta: ventaData.id,
       id_producto,
@@ -167,10 +177,53 @@ router.post("/ventas", async (req, res) => {
   res.status(201).json({ message: "Venta registrada con éxito", ventaId: ventaData.id });
 });
 
+// Rutas de reportes
+router.get("/reportes/detalle", verificarToken, verificarRol(['admin', 'vendedor']), async (req, res) => {
+  const { data, error } = await supabase
+    .from("venta")
+    .select(`
+      id,
+      fecha,
+      total,
+      id_usuario,
+      detalle_venta (
+        id_producto,
+        cantidad,
+        subtotal,
+        producto (nombre, precio)
+      )
+    `)
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.status(200).json(data);
+});
+
+// Ruta para obtener reportes de ventas
+router.get("/reportes", verificarToken, verificarRol(['admin', 'vendedor']), async (req, res) => {
+  const { data, error } = await supabase
+    .from("venta")
+    .select("fecha, total, id_usuario")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.status(200).json(data);
+});
+
+
+
+
+
 ////////////////////////////////////INVENTARIOS
 
 // Ruta para obtener inventarios (sin join)
-router.get("/inventarios", async (req, res) => {
+router.get("/inventarios" , verificarToken, verificarRol(['admin']), async (req, res) => {
   try {
     const { data: inventarios, error: inventariosError } = await supabase
       .from("inventario")
@@ -200,83 +253,70 @@ router.get("/inventarios", async (req, res) => {
     res.status(500).json({ error: "Error en el servidor" });
   }
 });
+
+// Registrar reposición de inventario
 // Ruta para registrar reposición de inventarios
-router.post("/inventarios", async (req, res) => {
+router.post("/inventarios", verificarToken, verificarRol(['admin']),  async (req, res) => {
   const { id_producto, cantidad, fecha_reposicion } = req.body;
 
+  // Verificar que todos los campos estén presentes
   if (!id_producto || !cantidad || !fecha_reposicion) {
-    return res.status(400).json({ error: "Todos los campos son obligatorios" });
+    return res.status(400).json({ error: "Todos los campos son obligatorios." });
   }
 
+  // Insertar reposición en la tabla de inventarios
   const { data, error } = await supabase
-    .from("inventario")  
-    .insert([{ id_producto, cantidad, fecha_reposicion }]);
+    .from("inventario")
+    .insert([{ id_producto, cantidad, fecha_reposicion }])
+    .select();
 
   if (error) {
     return res.status(500).json({ error: error.message });
   }
 
+  // Obtener el producto y su stock actual
   const { data: productoData, error: productoError } = await supabase
-    .from("producto")  
+    .from("producto")
     .select("stock")
     .eq("id", id_producto)
     .single();
 
-  if (productoError) {
-    return res.status(500).json({ error: productoError.message });
+  if (productoError || !productoData) {
+    return res.status(500).json({ error: "Producto no encontrado." });
   }
 
+  // Calcular el nuevo stock
   const nuevoStock = productoData.stock + cantidad;
 
-  await supabase
-    .from("producto")  
+  // Actualizar el stock del producto
+  const { error: updateError } = await supabase
+    .from("producto")
     .update({ stock: nuevoStock })
     .eq("id", id_producto);
 
-  res.status(201).json({ message: "Reposición de inventario registrada", inventario: data[0] });
-});
-
-
-//////////////////REPORTE
-// Ruta para obtener reportes de ventas detallados
-router.get("/reportes", async (req, res) => {
-  const { data, error } = await supabase
-    .from("venta")
-    .select(`
-      id,
-      fecha,
-      total,
-      id_usuario,
-      detalle_venta (
-        id_producto,
-        cantidad,
-        subtotal,
-        producto (nombre, precio)
-      )
-    `)
-    .order("fecha", { ascending: false });
-
-  if (error) {
-    return res.status(500).json({ error: error.message });
+  if (updateError) {
+    return res.status(500).json({ error: updateError.message });
   }
 
-  res.status(200).json(data);
+  // Responder al cliente
+  res.status(201).json({
+    message: "Reposición registrada correctamente y stock actualizado.",
+    inventario: data[0],
+    nuevoStock: nuevoStock
+  });
 });
 
 
-// Ruta para obtener reportes de ventas
-router.get("/reportes", async (req, res) => {
-    const { data, error } = await supabase
-      .from("venta")
-      .select("fecha, total, id_usuario")
-      .order("fecha", { ascending: false });
-  
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
-  
-    res.status(200).json(data);
-  });
+
+
+
+
+
+
+
+
+
+
 
 
 
