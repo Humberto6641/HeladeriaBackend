@@ -369,8 +369,6 @@ router.put("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req,
   const { nombre, rol, nivel_acceso, password } = req.body;
 
   // Verificar que los campos obligatorios estén presentes
-  console.log("Datos recibidos:", req.body);  // Agrega esto para ver qué se está recibiendo
-
   if (!nombre || !rol || !nivel_acceso) {
     return res.status(400).json({ error: "Todos los campos son obligatorios" });
   }
@@ -410,7 +408,6 @@ router.put("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req,
     res.status(500).json({ error: 'Error al actualizar el usuario', details: err.message });
   }
 });
-
 
 
 
