@@ -365,7 +365,7 @@ router.delete("/usuarios/:id", verificarToken, verificarRol(['admin']), async (r
 
 
 ////////////////////Ruta para actualizar los usuarios solo rol y por el adminstrador
-router.patch("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
+rrouter.patch("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
   const { id } = req.params;
   const { rol } = req.body;
 
@@ -383,10 +383,9 @@ router.patch("/usuarios/:id", verificarToken, verificarRol(['admin']), async (re
     const { data, error } = await supabase
       .from("usuario")
       .update(updateFields)
-      .eq("id", id)
-      .returning("*");
+      .eq("id", id);
 
-    if (error) {
+    if (error) {s
       console.error("Error en Supabase:", error.message);
       return res.status(500).json({ error: error.message });
     }
