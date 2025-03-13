@@ -364,9 +364,12 @@ router.delete("/usuarios/:id", verificarToken, verificarRol(['admin']), async (r
 });
 
 // Ruta para actualizar un usuario (solo para admin)
+// Ruta para actualizar un usuario (solo para admin)
 router.put("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
   const { id } = req.params;
   const { nombre, rol, nivel_acceso, password } = req.body;
+
+  console.log('Datos recibidos:', { nombre, rol, nivel_acceso, password });  // Verifica que los datos sean correctos
 
   // Verificar que los campos obligatorios estén presentes
   if (!nombre || !rol || !nivel_acceso) {
@@ -383,6 +386,8 @@ router.put("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req,
       const hashedPassword = await bcrypt.hash(password, salt); // Encriptar la contraseña
       updateFields.password = hashedPassword; // Establecer la contraseña encriptada en el objeto de actualización
     }
+
+    console.log('Campos a actualizar:', updateFields);  // Verifica que los campos de actualización sean correctos
 
     // Actualizar el usuario en la base de datos
     const { data, error } = await supabase
@@ -405,10 +410,10 @@ router.put("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req,
     res.status(200).json({ message: "Usuario actualizado con éxito", usuario: data[0] });
   } catch (err) {
     // Manejo de errores en el bloque try-catch
+    console.error('Error al actualizar el usuario:', err);  // Agregar más información de error
     res.status(500).json({ error: 'Error al actualizar el usuario', details: err.message });
   }
 });
-
 
 
 
