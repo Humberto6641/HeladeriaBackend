@@ -71,7 +71,7 @@ router.delete("/productos/:id", verificarToken, verificarRol(['admin', 'vendedor
       .from("producto")
       .delete()
       .eq("id", productoId)
-      .returning("*");
+      .select();
 
     if (error) {
       return res.status(500).json({ error: 'Error al eliminar el producto', details: error.message });
@@ -101,7 +101,7 @@ router.put("/productos/:id", verificarToken, verificarRol(['admin', 'vendedor'])
       .from("producto")
       .update({ nombre, tipo, precio, stock })
       .eq("id", id)
-      .returning("*");
+      .select();
 
     if (error) {
       return res.status(500).json({ error: error.message });
@@ -347,7 +347,7 @@ router.delete("/usuarios/:id", verificarToken, verificarRol(['admin']), async (r
       .from("usuario")
       .delete()
       .eq("id", usuarioId)
-      .returning("*");
+      .select();;
 
     if (error) {
       return res.status(500).json({ error: 'Error al eliminar el usuario', details: error.message });
