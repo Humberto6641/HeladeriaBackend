@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');  // Usamos bcryptjs en lugar de bcrypt
 const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -87,7 +87,5 @@ function verificarRol(rolesPermitidos) {
     next();  // Si el rol es válido, pasamos al siguiente middleware o ruta
   };
 }
-
-
 
 module.exports = { verificarToken, verificarRol, registrarUsuario, loginUsuario };
