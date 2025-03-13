@@ -1,4 +1,4 @@
-const bcrypt = require('bcryptjs');  
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -63,6 +63,8 @@ async function loginUsuario(req, res) {
   });
 
   if (rpcError) {
+    // Agregar una línea de depuración para ver el error detallado
+    console.error('Error al guardar ID de usuario en sesión:', rpcError);
     return res.status(500).json({ error: "Error al guardar ID de usuario en sesión." });
   }
 
