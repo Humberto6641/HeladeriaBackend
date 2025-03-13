@@ -6,11 +6,11 @@ const router = express.Router();
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// Rutas de autenticación
+
 router.post("/register", registrarUsuario);
 router.post("/login", loginUsuario);
 
-// Rutas para productos
+////////////////////////////////////////////// Rutas para productos
 router.post("/productos", verificarToken, verificarRol(['admin', 'vendedor']), async (req, res) => {
   const { nombre, tipo, precio, stock } = req.body;
 
@@ -369,7 +369,6 @@ router.patch("/usuarios/:id", verificarToken, verificarRol(['admin']), async (re
   const { id } = req.params;
   const { rol } = req.body;
 
-  // Verificar que el rol esté presente
   if (!rol) {
     return res.status(400).json({ error: "El rol es obligatorio" });
   }

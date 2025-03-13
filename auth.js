@@ -43,24 +43,24 @@ async function loginUsuario(req, res) {
     return res.status(401).json({ error: "Nombre o contraseña incorrectos" });
   }
 
-  // Validar la contraseña
+  
   const validPassword = await bcrypt.compare(password, data.password);
   if (!validPassword) {
     return res.status(401).json({ error: "Nombre o contraseña incorrectos" });
   }
 
-  // Generar el token JWT
+  
   const token = jwt.sign(
     { id: data.id, nombre: data.nombre, rol: data.rol, nivel_acceso: data.nivel_acceso },
     process.env.JWT_SECRET,
     { expiresIn: '1h' }
   );
 
-  // Enviar solo el token
+  
   res.status(200).json({ message: "Inicio de sesión exitoso", token });
 }
 
-// Middleware para verificar el token en cada petición
+// Middleware para verificar el token 
 function verificarToken(req, res, next) {
   const token = req.headers['authorization']?.split(' ')[1];  
 
@@ -78,7 +78,7 @@ function verificarToken(req, res, next) {
   });
 }
 
-// Middleware para verificar roles específicos
+
 function verificarRol(rolesPermitidos) {
   return (req, res, next) => {
     const userRol = req.user?.rol;  
