@@ -9,7 +9,7 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 
 const app = express();
 app.use(cors({
-  origin: 'http://127.0.0.1:5500'  
+  origin: 'https://heladoshumberto.netlify.app'  
 }));
 app.use(express.json()); 
 
