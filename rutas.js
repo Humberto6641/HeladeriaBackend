@@ -1,6 +1,6 @@
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
-const { registrarUsuario, loginUsuario } = require('./auth');  // Asegúrate de importar las funciones correctamente
+const { registrarUsuario, loginUsuario } = require('./auth');  
 const { verificarToken, verificarRol } = require('./auth');
 const router = express.Router();
 
@@ -87,7 +87,7 @@ router.delete("/productos/:id", verificarToken, verificarRol(['admin', 'vendedor
   }
 });
 
-// Ruta para actualizar un producto (Revisión)
+// Ruta para actualizar un producto
 router.put("/productos/:id", verificarToken, verificarRol(['admin', 'vendedor']), async (req, res) => {
   const { id } = req.params;
   const { nombre, tipo, precio, stock } = req.body;
@@ -222,7 +222,7 @@ router.get("/reportes", verificarToken, verificarRol(['admin', 'vendedor']), asy
 
 ////////////////////////////////////INVENTARIOS
 
-// Ruta para obtener inventarios (sin join)
+// Ruta para obtener inventarios
 router.get("/inventarios" , verificarToken, verificarRol(['admin']), async (req, res) => {
   try {
     const { data: inventarios, error: inventariosError } = await supabase
@@ -254,17 +254,14 @@ router.get("/inventarios" , verificarToken, verificarRol(['admin']), async (req,
   }
 });
 
-// Registrar reposición de inventario
-// Ruta para registrar reposición de inventarios
 router.post("/inventarios", verificarToken, verificarRol(['admin']),  async (req, res) => {
   const { id_producto, cantidad, fecha_reposicion } = req.body;
 
-  // Verificar que todos los campos estén presentes
+  
   if (!id_producto || !cantidad || !fecha_reposicion) {
     return res.status(400).json({ error: "Todos los campos son obligatorios." });
   }
 
-  // Insertar reposición en la tabla de inventarios
   const { data, error } = await supabase
     .from("inventario")
     .insert([{ id_producto, cantidad, fecha_reposicion }])
@@ -274,7 +271,6 @@ router.post("/inventarios", verificarToken, verificarRol(['admin']),  async (req
     return res.status(500).json({ error: error.message });
   }
 
-  // Obtener el producto y su stock actual
   const { data: productoData, error: productoError } = await supabase
     .from("producto")
     .select("stock")
@@ -285,7 +281,6 @@ router.post("/inventarios", verificarToken, verificarRol(['admin']),  async (req
     return res.status(500).json({ error: "Producto no encontrado." });
   }
 
-  // Calcular el nuevo stock
   const nuevoStock = productoData.stock + cantidad;
 
   // Actualizar el stock del producto
@@ -298,7 +293,6 @@ router.post("/inventarios", verificarToken, verificarRol(['admin']),  async (req
     return res.status(500).json({ error: updateError.message });
   }
 
-  // Responder al cliente
   res.status(201).json({
     message: "Reposición registrada correctamente y stock actualizado.",
     inventario: data[0],
