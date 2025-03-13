@@ -2,7 +2,6 @@ const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const { registrarUsuario, loginUsuario } = require('./auth');  
 const { verificarToken, verificarRol } = require('./auth');
-const crypto = require('crypto-js');
 const router = express.Router();
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -364,25 +363,20 @@ router.delete("/usuarios/:id", verificarToken, verificarRol(['admin']), async (r
   }
 });
 
-// Ruta para actualizar un usuario (solo para admin)
-router.put("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
-  const { id } = req.params;
-  const { nombre, rol, nivel_acceso, password } = req.body;
 
-  // Verificar que los campos obligatorios estén presentes
-  if (!nombre || !rol || !nivel_acceso) {
-    return res.status(400).json({ error: "Todos los campos son obligatorios" });
+////////////////////Ruta para actualizar los usuarios solo rol y por el adminstrador
+router.patch("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
+  const { id } = req.params;
+  const { rol } = req.body;
+
+  // Verificar que el rol esté presente
+  if (!rol) {
+    return res.status(400).json({ error: "El rol es obligatorio" });
   }
 
   try {
-    // Construir el objeto con los campos que se van a actualizar
-    const updateFields = { nombre, rol, nivel_acceso };
-
-    // Si se proporciona una nueva contraseña, encriptarla antes de actualizar
-    if (password) {
-      const hashedPassword = crypto.AES.encrypt(password, 'mi_clave_secreta').toString(); // Cifrar la contraseña
-      updateFields.password = hashedPassword; // Establecer la contraseña encriptada en el objeto de actualización
-    }
+    // Construir el objeto con el campo que se va a actualizar
+    const updateFields = { rol };
 
     // Actualizar el usuario en la base de datos
     const { data, error } = await supabase
@@ -402,14 +396,12 @@ router.put("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req,
     }
 
     // Responder con éxito
-    res.status(200).json({ message: "Usuario actualizado con éxito", usuario: data[0] });
+    res.status(200).json({ message: "Rol del usuario actualizado con éxito", usuario: data[0] });
   } catch (err) {
     // Manejo de errores en el bloque try-catch
-    res.status(500).json({ error: 'Error al actualizar el usuario', details: err.message });
+    res.status(500).json({ error: 'Error al actualizar el rol del usuario', details: err.message });
   }
 });
-
-
 
 
 
