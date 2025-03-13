@@ -301,7 +301,97 @@ router.post("/inventarios", verificarToken, verificarRol(['admin']),  async (req
 });
 
 
+// Ruta para obtener todos los usuarios (solo para admin)
+router.get("/usuarios", verificarToken, verificarRol(['admin']), async (req, res) => {
+  try {
+    const { data, error } = await supabase.from("usuario").select("id, nombre, rol, nivel_acceso");
 
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error al obtener usuarios:", error);
+    res.status(500).json({ error: "Error en el servidor" });
+  }
+});
+
+// Ruta para obtener un usuario por ID (solo para admin)
+router.get("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
+  const usuarioId = req.params.id;
+
+  try {
+    const { data, error } = await supabase.from("usuario").select("*").eq('id', usuarioId).single();
+
+    if (error) {
+      return res.status(500).json({ error: 'Error al obtener el usuario', details: error.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener el usuario', details: err.message });
+  }
+});
+
+// Ruta para eliminar un usuario (solo para admin)
+router.delete("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
+  const usuarioId = req.params.id;
+
+  try {
+    const { data, error } = await supabase
+      .from("usuario")
+      .delete()
+      .eq("id", usuarioId)
+      .returning("*");
+
+    if (error) {
+      return res.status(500).json({ error: 'Error al eliminar el usuario', details: error.message });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.status(200).json({ message: 'Usuario eliminado con éxito', usuario: data[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar el usuario', details: err.message });
+  }
+});
+
+// Ruta para actualizar un usuario (solo para admin)
+router.put("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
+  const { id } = req.params;
+  const { nombre, rol, nivel_acceso } = req.body;
+
+  if (!nombre || !rol || !nivel_acceso) {
+    return res.status(400).json({ error: "Todos los campos son obligatorios" });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("usuario")
+      .update({ nombre, rol, nivel_acceso })
+      .eq("id", id)
+      .returning("*");
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.status(200).json({ message: "Usuario actualizado con éxito", usuario: data[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar el usuario', details: err.message });
+  }
+});
 
 
 
