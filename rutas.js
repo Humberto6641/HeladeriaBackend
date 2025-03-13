@@ -404,5 +404,4 @@ router.put("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req,
 
 
 
-
 module.exports = router;
