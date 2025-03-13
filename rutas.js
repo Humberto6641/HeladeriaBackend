@@ -365,7 +365,7 @@ router.delete("/usuarios/:id", verificarToken, verificarRol(['admin']), async (r
 
 
 ////////////////////Ruta para actualizar los usuarios solo rol y por el adminstrador
-rrouter.patch("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
+router.patch("/usuarios/:id", verificarToken, verificarRol(['admin']), async (req, res) => {
   const { id } = req.params;
   const { rol } = req.body;
 
