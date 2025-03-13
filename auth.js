@@ -56,18 +56,7 @@ async function loginUsuario(req, res) {
     { expiresIn: '1h' }
   );
 
-  // Guardar el ID del usuario en la sesión de PostgreSQL
-  const { error: rpcError } = await supabase.rpc('set_config', {
-    key: 'myapp.current_user_id',
-    value: data.id.toString()
-  });
-
-  if (rpcError) {
-    // Agregar una línea de depuración para ver el error detallado
-    console.error('Error al guardar ID de usuario en sesión:', rpcError);
-    return res.status(500).json({ error: "Error al guardar ID de usuario en sesión." });
-  }
-
+  // Enviar solo el token
   res.status(200).json({ message: "Inicio de sesión exitoso", token });
 }
 
